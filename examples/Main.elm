@@ -29,7 +29,7 @@ init =
 
 initialModel : Model
 initialModel =
-    { messageToast = MessageToast.init UpdatedMessageToast
+    { messageToast = MessageToast.initWithConfig UpdatedMessageToast { delayInMs = 2000, toastsToShow = 10 }
     }
 
 
@@ -93,7 +93,9 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ style "width" "100vw", style "height" "100vh" ]
-        [ MessageToast.view model.messageToast
+        [ model.messageToast
+            |> MessageToast.overwriteContainerAttributes [ style "font-size" "1rem" ]
+            |> MessageToast.view
         , div [ style "background-color" "#202B5C", style "font-size" "0.75rem", style "display" "flex", style "flex-direction" "row" ]
             [ div [ style "margin" "1rem" ] [ button [ onClick <| ShowMessageToastDanger ] [ text "Show DANGER messageToast" ] ]
             , div [ style "margin" "1rem" ] [ button [ onClick <| ShowMessageToastInfo ] [ text "Show INFO messageToast" ] ]
