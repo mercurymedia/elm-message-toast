@@ -1,11 +1,11 @@
 module MessageToast exposing
     ( MessageToast(..)
-    , init
+    , init, initWithConfig
     , danger, info, success, warning
     , view
     , subscriptions
     , getOldestToast
-    , popOldestToast
+    , overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, popOldestToast
     )
 
 {-| MessageToast displays a list of feedback messages, each with a specified
@@ -19,7 +19,7 @@ message-type.
 
 # Init
 
-@docs init
+@docs init, initWithConfig
 
 
 # Create
@@ -44,7 +44,7 @@ message-type.
 
 # Manipulate
 
-@docs popOldestToast
+@docs changeDelay, changeToastsToShow, overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, popOldestToast
 
 -}
 
@@ -59,6 +59,12 @@ import Time
 -- MODEL
 
 
+{-| MessageToast holds the collection of messages.
+-}
+type MessageToast msg
+    = MessageToast (ToastConfig msg) (List ToastMessage)
+
+
 {-| Different message toast types.
 -}
 type ToastType
@@ -66,6 +72,18 @@ type ToastType
     | Info
     | Success
     | Warning
+
+
+{-| Holds the configuration of the message toast.
+-}
+type alias ToastConfig msg =
+    { customContainerAttributes : List (Html.Attribute msg)
+    , customIconAttributes : List (Html.Attribute msg)
+    , customMessageAttributes : List (Html.Attribute msg)
+    , delayInMs : Float
+    , toastsToShow : Int
+    , updateMsg : MessageToast msg -> msg
+    }
 
 
 {-| ToastMessage holds the message, the specified type and the unique id.
@@ -77,17 +95,6 @@ type alias ToastMessage =
     }
 
 
-{-| MessageToast holds the collection of messages.
--}
-type MessageToast msg
-    = MessageToast
-        { updateMsg : MessageToast msg -> msg
-        , delayInMs : Float
-        , toastsToShow : Int
-        }
-        (List ToastMessage)
-
-
 
 -- INIT
 
@@ -96,12 +103,34 @@ type MessageToast msg
 -}
 init : (MessageToast msg -> msg) -> MessageToast msg
 init updateMsg =
-    MessageToast
-        { updateMsg = updateMsg
-        , delayInMs = 8000
-        , toastsToShow = 4
-        }
-        []
+    let
+        config =
+            { customContainerAttributes = []
+            , customIconAttributes = []
+            , customMessageAttributes = []
+            , delayInMs = 8000
+            , toastsToShow = 4
+            , updateMsg = updateMsg
+            }
+    in
+    MessageToast config []
+
+
+{-| Initializes a custom messageToast handler with the provided options.
+-}
+initWithConfig : (MessageToast msg -> msg) -> { delayInMs : Float, toastsToShow : Int } -> MessageToast msg
+initWithConfig updateMsg customConfig =
+    let
+        config =
+            { customContainerAttributes = []
+            , customIconAttributes = []
+            , customMessageAttributes = []
+            , delayInMs = customConfig.delayInMs
+            , toastsToShow = customConfig.toastsToShow
+            , updateMsg = updateMsg
+            }
+    in
+    MessageToast config []
 
 
 
@@ -161,6 +190,8 @@ view (MessageToast config toasts) =
                 [ id "elm-message-toast"
                 , style "width" "350px"
                 , style "max-width" "90%"
+                , style "max-height" "90%"
+                , style "overflow" "auto"
                 , style "position" "fixed"
                 , style "bottom" "20px"
                 , style "right" "20px"
@@ -168,48 +199,51 @@ view (MessageToast config toasts) =
                 , style "display" "flex"
                 , style "flex-direction" "flex-col"
                 , style "flex-flow" "wrap"
-                , style "overflow" "hidden"
                 ]
-                (viewToasts dismissEvent toastList)
+                (viewToasts dismissEvent config toastList)
 
 
-viewToasts : (ToastMessage -> msg) -> List ToastMessage -> List (Html msg)
-viewToasts dismissEvent toasts =
+viewToasts : (ToastMessage -> msg) -> ToastConfig msg -> List ToastMessage -> List (Html msg)
+viewToasts dismissEvent config toasts =
     case toasts of
         topToast :: remainingToasts ->
-            List.append [ viewToast dismissEvent topToast ] (viewToasts dismissEvent remainingToasts)
+            List.append [ viewToast dismissEvent config topToast ] (viewToasts dismissEvent config remainingToasts)
 
         [] ->
             [ text "" ]
 
 
-viewToast : (ToastMessage -> msg) -> ToastMessage -> Html msg
-viewToast dismissEvent toast =
+viewToast : (ToastMessage -> msg) -> ToastConfig msg -> ToastMessage -> Html msg
+viewToast dismissEvent config toast =
     let
-        messageToastAttributes =
+        defaultToastContainerAttributes =
             [ class ("message-toast" ++ " " ++ toastTypeClass toast.toastType)
-            , onClick <| dismissEvent toast
             , style "width" "100%"
+            , style "position" "relative"
             , style "z-index" "50"
-            , style "cursor" "pointer"
             , style "font-size" "0.75rem"
             , style "background-color" "#fff"
             , style "display" "flex"
             , style "flex-direction" "row"
             , style "align-items" "center"
+            , style "border" "1px solid #bbb"
             , style "border-radius" "0.25rem"
             , style "margin" "0.125rem 0"
             , style "box-shadow" "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
             ]
+
+        updatedToastContainerAttributes =
+            List.append defaultToastContainerAttributes config.customContainerAttributes
     in
-    div messageToastAttributes
-        [ viewToastIcon toast
-        , viewToastMessage toast
+    div updatedToastContainerAttributes
+        [ viewToastIcon config.customIconAttributes toast
+        , viewToastMessage config.customMessageAttributes toast
+        , viewCloseIcon (dismissEvent toast)
         ]
 
 
-viewToastIcon : ToastMessage -> Html msg
-viewToastIcon toast =
+viewToastIcon : List (Html.Attribute msg) -> ToastMessage -> Html msg
+viewToastIcon customIconAttributes toast =
     let
         ( bgColor, icon ) =
             case toast.toastType of
@@ -224,29 +258,52 @@ viewToastIcon toast =
 
                 Warning ->
                     ( "#ec7a08", Icons.alertTriangle )
+
+        defaultToastIconStyles =
+            [ style "background-color" bgColor
+            , style "color" "rgba(255,255,255,.74)"
+            , style "text-align" "center"
+            , style "width" "3rem"
+            , style "padding" "0.5rem 0"
+            , style "height" "100%"
+            , style "border-top-left-radius" "0.125rem"
+            , style "border-bottom-left-radius" "0.125rem"
+            , style "flex-shrink" "0"
+            , style "box-sizing" "border-box"
+            , style "flex-grow" "0"
+            ]
+
+        updatedToastIconStyles =
+            List.append defaultToastIconStyles customIconAttributes
     in
-    span
-        [ style "background-color" bgColor
-        , style "color" "rgba(255,255,255,.74)"
-        , style "text-align" "center"
-        , style "width" "3rem"
-        , style "padding" "0.5rem 0"
-        , style "height" "100%"
-        , style "border-top-left-radius" "0.25rem"
-        , style "border-bottom-left-radius" "0.25rem"
-        , style "flex-shrink" "0"
-        , style "flex-grow" "0"
-        ]
-        [ icon ]
+    span updatedToastIconStyles [ icon ]
 
 
-viewToastMessage : ToastMessage -> Html msg
-viewToastMessage toast =
+viewToastMessage : List (Html.Attribute msg) -> ToastMessage -> Html msg
+viewToastMessage customMessageAttributes toast =
+    let
+        defaultToastMessageAttributes =
+            [ style "padding" "0.75rem"
+            , style "flex-grow" "1"
+            ]
+
+        updatedToastMessageAttributes =
+            List.append defaultToastMessageAttributes customMessageAttributes
+    in
+    span updatedToastMessageAttributes [ text toast.message ]
+
+
+viewCloseIcon : msg -> Html msg
+viewCloseIcon dismissEvent =
     span
-        [ style "padding" "0.5rem"
-        , style "flex-grow" "1"
+        [ style "position" "absolute"
+        , style "top" "2px"
+        , style "right" "2px"
+        , style "color" "#ccc"
+        , style "cursor" "pointer"
+        , onClick dismissEvent
         ]
-        [ text toast.message ]
+        [ Icons.x ]
 
 
 
@@ -280,11 +337,36 @@ getOldestToast (MessageToast _ toasts) =
 -- MANIPULATION
 
 
+{-| overwrite existing styles for the message toast container that wraps the icon and message block.
+-}
+overwriteContainerAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
+overwriteContainerAttributes attributes (MessageToast config toasts) =
+    MessageToast { config | customContainerAttributes = attributes } toasts
+
+
+{-| overwrite existing styles for the message toast icon that's placed inside the toast container besides the message block.
+-}
+overwriteIconAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
+overwriteIconAttributes attributes (MessageToast config toasts) =
+    MessageToast { config | customIconAttributes = attributes } toasts
+
+
+{-| overwrite existing styles for the message toast message block that's placed inside the toast container besides the icon.
+-}
+overwriteMessageAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
+overwriteMessageAttributes attributes (MessageToast config toasts) =
+    MessageToast { config | customMessageAttributes = attributes } toasts
+
+
 {-| Removes the time-wise oldest toast from the existing collection.
 -}
 popOldestToast : MessageToast msg -> MessageToast msg
 popOldestToast (MessageToast config toasts) =
-    MessageToast config <| List.drop 1 toasts
+    let
+        newToasts =
+            List.take (List.length toasts - 1) toasts
+    in
+    MessageToast config newToasts
 
 
 
@@ -306,7 +388,7 @@ appendToList toastMessage (MessageToast config toasts) =
         |> MessageToast config
 
 
-{-| Provides a specific class name to better distinguish the different toasts outside.
+{-| Provides a specific HTML-class name to better distinguish the different toast types in the DOM.
 -}
 toastTypeClass : ToastType -> String
 toastTypeClass toastType =
