@@ -358,7 +358,7 @@ overwriteMessageAttributes attributes (MessageToast config toasts) =
     MessageToast { config | customMessageAttributes = attributes } toasts
 
 
-{-| Removes the time-wise oldest toast from the existing collection.
+{-| Removes the time-wise oldest toast from the existing collection.s
 -}
 popOldestToast : MessageToast msg -> MessageToast msg
 popOldestToast (MessageToast config toasts) =
