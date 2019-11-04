@@ -1,0 +1,27 @@
+th {
+  background-color: lightgray;
+  padding: 0.75rem;
+  min-width: 150px;
+  text-align: center;
+}
+
+th.danger {
+  background-color: red;
+}
+
+th.info {
+  background-color: gray;
+}
+
+th.success {
+  background-color: lime;
+}
+
+th.warning {
+  background-color: orange;
+}
+
+td {
+  background-color: #ddd;
+  text-align: center;
+}

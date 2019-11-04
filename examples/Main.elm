@@ -1,11 +1,10 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (style)
+import Html exposing (Html, button, div, table, td, text, th, tr)
+import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import MessageToast exposing (MessageToast)
-import Time exposing (Month(..), Posix)
 
 
 
@@ -29,7 +28,11 @@ init =
 
 initialModel : Model
 initialModel =
-    { messageToast = MessageToast.initWithConfig UpdatedMessageToast { delayInMs = 2000, toastsToShow = 10 }
+    { -- MessageToast can be initialized with custom settings
+      customMessageToast = MessageToast.initWithConfig UpdatedCustomMessageToast { delayInMs = 2000, toastsToShow = 10 }
+
+    -- MessageToast provides default settings and is therefore easy to use
+    , simpleMessageToast = MessageToast.init UpdatedSimpleMessageToast
     }
 
 
@@ -38,17 +41,24 @@ initialModel =
 
 
 type alias Model =
-    { messageToast : MessageToast Msg
+    { customMessageToast : MessageToast Msg
+    , simpleMessageToast : MessageToast Msg
     }
 
 
 type Msg
-    = ShowMessageToastDanger
-    | ShowMessageToastInfo
-    | ShowMessageToastSuccess
-    | ShowMessageToastWarning
-    | ShowSuperLongTextMessageToast
-    | UpdatedMessageToast (MessageToast Msg)
+    = ShowDangerCustom
+    | ShowDangerSimple
+    | ShowInfoCustom
+    | ShowInfoSimple
+    | ShowSuccessCustom
+    | ShowSuccessSimple
+    | ShowWarningCustom
+    | ShowWarningSimple
+    | ShowSuperLongCustom
+    | ShowSuperLongSimple
+    | UpdatedCustomMessageToast (MessageToast Msg)
+    | UpdatedSimpleMessageToast (MessageToast Msg)
 
 
 
@@ -58,19 +68,31 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ShowMessageToastDanger ->
-            ( { model | messageToast = MessageToast.danger model.messageToast "Something critical happend." }, Cmd.none )
+        ShowDangerCustom ->
+            ( { model | customMessageToast = MessageToast.danger model.customMessageToast "Something critical happend." }, Cmd.none )
 
-        ShowMessageToastInfo ->
-            ( { model | messageToast = MessageToast.info model.messageToast "Process aborted." }, Cmd.none )
+        ShowDangerSimple ->
+            ( { model | simpleMessageToast = MessageToast.danger model.simpleMessageToast "Something critical happend." }, Cmd.none )
 
-        ShowMessageToastSuccess ->
-            ( { model | messageToast = MessageToast.success model.messageToast "Entity created." }, Cmd.none )
+        ShowInfoCustom ->
+            ( { model | customMessageToast = MessageToast.info model.customMessageToast "Process aborted." }, Cmd.none )
 
-        ShowMessageToastWarning ->
-            ( { model | messageToast = MessageToast.warning model.messageToast "Could not create it." }, Cmd.none )
+        ShowInfoSimple ->
+            ( { model | simpleMessageToast = MessageToast.info model.simpleMessageToast "Process aborted." }, Cmd.none )
 
-        ShowSuperLongTextMessageToast ->
+        ShowSuccessCustom ->
+            ( { model | customMessageToast = MessageToast.success model.customMessageToast "Entity created." }, Cmd.none )
+
+        ShowSuccessSimple ->
+            ( { model | simpleMessageToast = MessageToast.success model.simpleMessageToast "Entity created." }, Cmd.none )
+
+        ShowWarningCustom ->
+            ( { model | customMessageToast = MessageToast.warning model.customMessageToast "Could not create it." }, Cmd.none )
+
+        ShowWarningSimple ->
+            ( { model | simpleMessageToast = MessageToast.warning model.simpleMessageToast "Could not create it." }, Cmd.none )
+
+        ShowSuperLongCustom ->
             let
                 loremIpsum =
                     "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut "
@@ -80,10 +102,27 @@ update msg model =
                         ++ "labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores "
                         ++ "et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
             in
-            ( { model | messageToast = MessageToast.info model.messageToast loremIpsum }, Cmd.none )
+            ( { model | customMessageToast = MessageToast.info model.customMessageToast loremIpsum }, Cmd.none )
 
-        UpdatedMessageToast updatedMessageToast ->
-            ( { model | messageToast = updatedMessageToast }, Cmd.none )
+        ShowSuperLongSimple ->
+            let
+                loremIpsum =
+                    "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut "
+                        ++ "labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores "
+                        ++ "et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. "
+                        ++ "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut "
+                        ++ "labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores "
+                        ++ "et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
+            in
+            ( { model | simpleMessageToast = MessageToast.info model.simpleMessageToast loremIpsum }, Cmd.none )
+
+        UpdatedCustomMessageToast updatedMessageToast ->
+            -- Only needed to re-assign the updated MessageToast to the model.
+            ( { model | customMessageToast = updatedMessageToast }, Cmd.none )
+
+        UpdatedSimpleMessageToast updatedMessageToast ->
+            -- Only needed to re-assign the updated MessageToast to the model.
+            ( { model | simpleMessageToast = updatedMessageToast }, Cmd.none )
 
 
 
@@ -93,15 +132,40 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ style "width" "100vw", style "height" "100vh" ]
-        [ model.messageToast
-            |> MessageToast.overwriteContainerAttributes [ style "font-size" "1rem" ]
+        [ -- Stylings (or in general Html.Attribute's) of the MessageToast view can be overriden
+          -- NOTE: Does not need to be initialized with `initCustom`
+          model.customMessageToast
+            |> MessageToast.overwriteContainerAttributes [ style "top" "20px", style "bottom" "auto" ]
+            |> MessageToast.overwriteToastAttributes [ style "font-size" "1rem" ]
             |> MessageToast.view
-        , div [ style "background-color" "#202B5C", style "font-size" "0.75rem", style "display" "flex", style "flex-direction" "row" ]
-            [ div [ style "margin" "1rem" ] [ button [ onClick <| ShowMessageToastDanger ] [ text "Show DANGER messageToast" ] ]
-            , div [ style "margin" "1rem" ] [ button [ onClick <| ShowMessageToastInfo ] [ text "Show INFO messageToast" ] ]
-            , div [ style "margin" "1rem" ] [ button [ onClick <| ShowMessageToastSuccess ] [ text "Show SUCCESS messageToast" ] ]
-            , div [ style "margin" "1rem" ] [ button [ onClick <| ShowMessageToastWarning ] [ text "Show WARNING messageToast" ] ]
-            , div [ style "margin" "1rem" ] [ button [ onClick <| ShowSuperLongTextMessageToast ] [ text "Show SUPERLONG messageToast" ] ]
+
+        -- MessageToast view provides default styling and is therefore easy to use
+        , MessageToast.view model.simpleMessageToast
+        , table []
+            [ tr []
+                [ th [] []
+                , th [ class "danger" ] [ text "DANGER" ]
+                , th [ class "info" ] [ text "INFO" ]
+                , th [ class "success" ] [ text "SUCCESS" ]
+                , th [ class "warning" ] [ text "WARNING" ]
+                , th [ class "info" ] [ text "SUPERLONG" ]
+                ]
+            , tr []
+                [ th [] [ text "Simple Toasts" ]
+                , td [] [ button [ onClick <| ShowDangerSimple ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowInfoSimple ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowSuccessSimple ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowWarningSimple ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowSuperLongSimple ] [ text "Show" ] ]
+                ]
+            , tr []
+                [ th [] [ text "Customized Toasts" ]
+                , td [] [ button [ onClick <| ShowDangerCustom ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowInfoCustom ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowSuccessCustom ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowWarningCustom ] [ text "Show" ] ]
+                , td [] [ button [ onClick <| ShowSuperLongCustom ] [ text "Show" ] ]
+                ]
             ]
         ]
 
@@ -112,4 +176,8 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    MessageToast.subscriptions model.messageToast
+    Sub.batch
+        [ -- MessageToast provides a subscription to close automatically which is easy to use.
+          MessageToast.subscriptions model.simpleMessageToast
+        , MessageToast.subscriptions model.customMessageToast
+        ]

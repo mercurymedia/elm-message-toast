@@ -5,7 +5,7 @@ module MessageToast exposing
     , view
     , subscriptions
     , getOldestToast
-    , overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, popOldestToast
+    , overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, overwriteToastAttributes, popOldestToast
     )
 
 {-| MessageToast displays a list of feedback messages, each with a specified
@@ -44,7 +44,7 @@ message-type.
 
 # Manipulate
 
-@docs changeDelay, changeToastsToShow, overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, popOldestToast
+@docs overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, overwriteToastAttributes, popOldestToast
 
 -}
 
@@ -80,6 +80,7 @@ type alias ToastConfig msg =
     { customContainerAttributes : List (Html.Attribute msg)
     , customIconAttributes : List (Html.Attribute msg)
     , customMessageAttributes : List (Html.Attribute msg)
+    , customToastAttributes : List (Html.Attribute msg)
     , delayInMs : Float
     , toastsToShow : Int
     , updateMsg : MessageToast msg -> msg
@@ -108,6 +109,7 @@ init updateMsg =
             { customContainerAttributes = []
             , customIconAttributes = []
             , customMessageAttributes = []
+            , customToastAttributes = []
             , delayInMs = 8000
             , toastsToShow = 4
             , updateMsg = updateMsg
@@ -125,6 +127,7 @@ initWithConfig updateMsg customConfig =
             { customContainerAttributes = []
             , customIconAttributes = []
             , customMessageAttributes = []
+            , customToastAttributes = []
             , delayInMs = customConfig.delayInMs
             , toastsToShow = customConfig.toastsToShow
             , updateMsg = updateMsg
@@ -186,21 +189,26 @@ view (MessageToast config toasts) =
             text ""
 
         toastList ->
-            div
-                [ id "elm-message-toast"
-                , style "width" "350px"
-                , style "max-width" "90%"
-                , style "max-height" "90%"
-                , style "overflow" "auto"
-                , style "position" "fixed"
-                , style "bottom" "20px"
-                , style "right" "20px"
-                , style "z-index" "50"
-                , style "display" "flex"
-                , style "flex-direction" "flex-col"
-                , style "flex-flow" "wrap"
-                ]
-                (viewToasts dismissEvent config toastList)
+            let
+                defaultContainerAttributes =
+                    [ id "elm-message-toast"
+                    , style "width" "350px"
+                    , style "max-width" "90%"
+                    , style "max-height" "90%"
+                    , style "overflow" "auto"
+                    , style "position" "fixed"
+                    , style "bottom" "20px"
+                    , style "right" "20px"
+                    , style "z-index" "50"
+                    , style "display" "flex"
+                    , style "flex-direction" "flex-col"
+                    , style "flex-flow" "wrap"
+                    ]
+
+                updatedContainerAttributes =
+                    List.append defaultContainerAttributes config.customContainerAttributes
+            in
+            div updatedContainerAttributes (viewToasts dismissEvent config toastList)
 
 
 viewToasts : (ToastMessage -> msg) -> ToastConfig msg -> List ToastMessage -> List (Html msg)
@@ -216,7 +224,7 @@ viewToasts dismissEvent config toasts =
 viewToast : (ToastMessage -> msg) -> ToastConfig msg -> ToastMessage -> Html msg
 viewToast dismissEvent config toast =
     let
-        defaultToastContainerAttributes =
+        defaultToastAttributes =
             [ class ("message-toast" ++ " " ++ toastTypeClass toast.toastType)
             , style "width" "100%"
             , style "position" "relative"
@@ -232,10 +240,10 @@ viewToast dismissEvent config toast =
             , style "box-shadow" "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
             ]
 
-        updatedToastContainerAttributes =
-            List.append defaultToastContainerAttributes config.customContainerAttributes
+        updatedToastAttributes =
+            List.append defaultToastAttributes config.customToastAttributes
     in
-    div updatedToastContainerAttributes
+    div updatedToastAttributes
         [ viewToastIcon config.customIconAttributes toast
         , viewToastMessage config.customMessageAttributes toast
         , viewCloseIcon (dismissEvent toast)
@@ -337,28 +345,47 @@ getOldestToast (MessageToast _ toasts) =
 -- MANIPULATION
 
 
-{-| overwrite existing styles for the message toast container that wraps the icon and message block.
+{-| Overwrite existing styles for the message toast container that contains all the several toasts displayed.
+
+For example, this can be used to override the position or width of the toasts.
+
 -}
 overwriteContainerAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
 overwriteContainerAttributes attributes (MessageToast config toasts) =
     MessageToast { config | customContainerAttributes = attributes } toasts
 
 
-{-| overwrite existing styles for the message toast icon that's placed inside the toast container besides the message block.
+{-| Overwrite existing styles for the message toast icon that's placed inside the toast container besides the message block.
+
+For example, this can be used to override colors, spacings or sizes of the icon.
+
 -}
 overwriteIconAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
 overwriteIconAttributes attributes (MessageToast config toasts) =
     MessageToast { config | customIconAttributes = attributes } toasts
 
 
-{-| overwrite existing styles for the message toast message block that's placed inside the toast container besides the icon.
+{-| Overwrite existing styles for the message toast message block that's placed inside the toast container besides the icon.
+
+For example, this can be used to override colors, spacings, font attributes or alignments of the toast message.
+
 -}
 overwriteMessageAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
 overwriteMessageAttributes attributes (MessageToast config toasts) =
     MessageToast { config | customMessageAttributes = attributes } toasts
 
 
-{-| Removes the time-wise oldest toast from the existing collection.s
+{-| Override existing styles for the message toast that wraps the icon and message block.
+
+For example, can be used to ovveride border stylings, shadows or spacings between the toasts.
+
+-}
+overwriteToastAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
+overwriteToastAttributes attributes (MessageToast config toasts) =
+    MessageToast { config | customToastAttributes = attributes } toasts
+
+
+{-| Removes the time-wise oldest toast from the existing collection.
 -}
 popOldestToast : MessageToast msg -> MessageToast msg
 popOldestToast (MessageToast config toasts) =
