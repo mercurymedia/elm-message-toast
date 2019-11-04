@@ -100,7 +100,12 @@ type alias ToastMessage =
 -- INIT
 
 
-{-| Initializes the messageToast handler.
+{-| Initializes the messageToast handler with the default settings.
+
+    - Delay: 8 seconds
+    - Showing messages: 4
+    - Styling: default
+
 -}
 init : (MessageToast msg -> msg) -> MessageToast msg
 init updateMsg =
@@ -172,7 +177,7 @@ warning toast message =
 -- VIEW
 
 
-{-| Displays the message toasts.
+{-| Displays the configured message toasts.
 -}
 view : MessageToast msg -> Html msg
 view (MessageToast config toasts) =
