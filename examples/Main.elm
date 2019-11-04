@@ -132,7 +132,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ style "width" "100vw", style "height" "100vh" ]
-        [ -- Stylings (or in general Html.Attribute's) of the MessageToast view can be overriden
+        [ -- Stylings (or in general Html.Attribute's) of the MessageToast view can be overridden
           -- NOTE: Does not need to be initialized with `initCustom`
           model.customMessageToast
             |> MessageToast.overwriteContainerAttributes [ style "top" "20px", style "bottom" "auto" ]
