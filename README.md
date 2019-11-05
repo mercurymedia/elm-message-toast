@@ -6,7 +6,7 @@ Display a list of small popups with a feedback message to the user (_default 4 a
 
 There are **4 different types** for the message to choose from: **Danger**, **Info**, **Success** and **Warning**
 
-<img src="https://user-images.githubusercontent.com/49154679/68119166-48ecb280-ff02-11e9-86d4-9ff5c8e3a241.png" width="350">
+<img src="https://user-images.githubusercontent.com/49154679/68490103-b3765900-0248-11ea-8d87-199adb791a8b.png" width="350">
 
 ## Usage
 
@@ -16,23 +16,26 @@ The package offers a way to use the `MessageToast` fully pre-configured, which m
 
 Usually there will be only one MessageToast declaration on the model, since the message popups will be in one group and share the same settings. Multiple attributes are only necessary if separate configurations are used.
 
-The pre-configured `MessageToast` is initialized with `init`. To provide custom settings use `initCustom`.
+The pre-configured `MessageToast` is initialized with `init`.
 
 ```elm
 import MessageToast exposing (MessageToast)
 
 type alias Model =
-    { simpleMessageToast : MessageToast Msg
-    , customMessageToast : MessageToast Msg
-    }
+    { messageToast : MessageToast Msg }
 
 initialModel : Model
 initialModel =
     { -- MessageToast requires by default only the message to update itself to the model
-      simpleMessageToast = MessageToast.init UpdatedSimpleMessageToast
+      messageToast = MessageToast.init UpdatedSimpleMessageToast
+    }
+```
 
-    -- MessageToast can also be initialized with custom settings
-    , customMessageToast = MessageToast.initCustom UpdatedCustomMessageToast { delayInMs = 2000, toastsToShow = 10 }
+To provide custom settings use `initWithConfig`.
+
+```elm
+    { -- MessageToast can also be initialized with custom settings
+      messageToast = MessageToast.initWithConfig UpdatedCustomMessageToast { delayInMs = 2000, toastsToShow = 10 }
     }
 ```
 
@@ -43,7 +46,7 @@ The `MessageToast` can update itself, so that it's only required that the update
 ```elm
 UpdatedSimpleMessageToast updatedMessageToast ->
     -- Only needed to re-assign the updated MessageToast to the model.
-    ( { model | simpleMessageToast = updatedMessageToast }, Cmd.none )
+    ( { model | messageToast = updatedMessageToast }, Cmd.none )
 ```
 
 #### Display `MessageToast` in the view
@@ -55,22 +58,21 @@ view : Model -> Html Msg
 view model =
     div [ style "width" "100vw", style "height" "100vh" ]
         [ -- Only need to pass the proper MessageToast
-          MessageToast.view model.simpleMessageToast
+          MessageToast.view model.messageToast
         ...
         ]
 ```
 
-However, the `MessageToast` can be customized in a certain extent by overriding attributes (and therefore also stylings) using provided functions (`overrideContainerAttributes`, `overrideToastAttributes`, `overrideMessageAttributes`, `overrideIconAttributes`). [For further informations see docs.](http://package.elm-lang.org/packages/mercurymedia/elm-message-toast/latest/MessageToast)
+However, the `MessageToast` can be customized in a certain extent by overriding attributes (and therefore also stylings) using provided functions (`overwriteContainerAttributes`, `overwriteToastAttributes`, `overwriteMessageAttributes`, `overwriteIconAttributes`). [For further informations see docs.](http://package.elm-lang.org/packages/mercurymedia/elm-message-toast/latest/MessageToast)
 
 ```elm
 view : Model -> Html Msg
 view model =
     div [ style "width" "100vw", style "height" "100vh" ]
         [ -- Stylings (or in general Html.Attribute's) of the MessageToast view can be overridden
-          -- NOTE: Does not need to be initialized with `initCustom`
-          model.customMessageToast
-            |> MessageToast.overrideContainerAttributes [ style "top" "20px", style "bottom" "auto" ]
-            |> MessageToast.overrideToastAttributes [ style "font-size" "1rem" ]
+          model.messageToast
+            |> MessageToast.overwriteContainerAttributes [ style "top" "20px", style "bottom" "auto" ]
+            |> MessageToast.overwriteToastAttributes [ style "font-size" "1rem" ]
             |> MessageToast.view
         ...
         ]
@@ -84,7 +86,7 @@ So that the `MessageToast` can automatically pop off the time-wise oldest messag
 subscriptions : Model -> Sub Msg
 subscriptions model =
     -- MessageToast provides a subscription to close automatically which is easy to use.
-    MessageToast.subscriptions model.simpleMessageToast
+    MessageToast.subscriptions model.messageToast
 ```
 
 **However, if this functionality of automatically disappearing messages is not wanted, this part can be skipped.**
@@ -97,12 +99,12 @@ To show a message popup simply call one of the 4 type functions (`danger`, `info
 -- Message that assigns a new "Danger" message to the MessageToast handler.
 
 ShowDanger ->
-    ( { model | customMessageToast = MessageToast.danger model.customMessageToast "Something critical happened." }, Cmd.none )
+    ( { model | messageToast = MessageToast.danger model.messageToast "Something critical happened." }, Cmd.none )
 ```
 
 ## Example
 
-An example can be found in the `examples/` folder. To build the example and view it in the browser you can simply run `make` from inside the `examples/` folder.
+Examples can be found in the `examples/` folder. To build the examples and view it in the browser you can simply run `elm make examples/Default.elm` or `elm make examples/Configured.elm`.
 
 ---
 
