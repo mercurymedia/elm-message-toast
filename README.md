@@ -108,4 +108,4 @@ Examples can be found in the `examples/` folder. To build the examples and view 
 
 ---
 
-[<img src="https://cdn.chimpify.net/5c5ab20aa85872ea638b4568/2019/03/logo-mercury-media.svg" width="150">](https://getmercury.io/)
+[![Mercury Media logo](https://user-images.githubusercontent.com/49154679/69350588-21277980-0c7a-11ea-8501-7860daf6f980.png)](https://getmercury.io/)
