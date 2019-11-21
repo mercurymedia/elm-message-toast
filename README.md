@@ -6,7 +6,7 @@ Display a list of small popups with a feedback message to the user (_default 4 a
 
 There are **4 different types** for the message to choose from: **Danger**, **Info**, **Success** and **Warning**
 
-<img src="https://user-images.githubusercontent.com/49154679/68490103-b3765900-0248-11ea-8d87-199adb791a8b.png" width="350">
+![MessageToast in Elm](https://user-images.githubusercontent.com/49154679/69343512-0fd87000-0c6e-11ea-9325-80f24988ded3.png)
 
 ## Usage
 
