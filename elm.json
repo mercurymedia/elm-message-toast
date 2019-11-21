@@ -3,7 +3,7 @@
     "name": "mercurymedia/elm-message-toast",
     "summary": "a small popup to display informative messages that disappear automatically",
     "license": "MIT",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "exposed-modules": [
         "MessageToast"
     ],
