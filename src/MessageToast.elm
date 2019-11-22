@@ -284,6 +284,8 @@ viewToastIcon customIconAttributes toast =
             , style "flex-shrink" "0"
             , style "box-sizing" "border-box"
             , style "flex-grow" "0"
+            , style "display" "flex"
+            , style "justify-content" "center"
             ]
 
         updatedToastIconStyles =
