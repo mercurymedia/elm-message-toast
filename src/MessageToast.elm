@@ -273,7 +273,8 @@ viewToastIcon customIconAttributes toast =
                     ( "#ec7a08", Icons.alertTriangle )
 
         defaultToastIconStyles =
-            [ style "background-color" bgColor
+            [ class "toast-icon"
+            , style "background-color" bgColor
             , style "color" "rgba(255,255,255,.74)"
             , style "text-align" "center"
             , style "width" "3rem"
@@ -298,7 +299,8 @@ viewToastMessage : List (Html.Attribute msg) -> ToastMessage -> Html msg
 viewToastMessage customMessageAttributes toast =
     let
         defaultToastMessageAttributes =
-            [ style "padding" "0.75rem"
+            [ class "toast-message"
+            , style "padding" "0.75rem"
             , style "flex-grow" "1"
             ]
 
@@ -311,7 +313,8 @@ viewToastMessage customMessageAttributes toast =
 viewCloseIcon : msg -> Html msg
 viewCloseIcon dismissEvent =
     span
-        [ style "position" "absolute"
+        [ class "close-toast"
+        , style "position" "absolute"
         , style "top" "2px"
         , style "right" "2px"
         , style "color" "#ccc"
