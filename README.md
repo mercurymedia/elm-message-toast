@@ -93,13 +93,40 @@ subscriptions model =
 
 #### Use it
 
-To show a message popup simply call one of the 4 type functions (`danger`, `info`, `success`, `warning`) for the defined `MessageToast` and update it to the model.
+To show a message popup simply generate a toast with one of the 4 type functions (`danger`, `info`, `success`, `warning`) and call a function onto it to display it with your individual needs.
+The simplest way is done by piping the generated toast into `MessageToast.withMessage`.
+
+**Example:**
 
 ```elm
--- Message that assigns a new "Danger" message to the MessageToast handler.
+-- Message that assigns a new "Danger" message toast to the MessageToast handler with default HTML layout.
 
 ShowDanger ->
-    ( { model | messageToast = MessageToast.danger model.messageToast "Something critical happened." }, Cmd.none )
+    let
+        messageToast =
+            model.messageToast
+                |> MessageToast.warning
+                |> MessageToast.withMessage "My warning message"
+    in
+    ( { model | messageToast = messageToast }, Cmd.none)
+```
+
+This will display the message with the default HTML layout of the MessageToast.
+If you want to customize the layout, you can instead pipe the generated toast into `MessageToast.withHtml` and provide a individual structured HTML layout for the content of the MessageToast.
+
+**Example:**
+
+```elm
+-- Message that assigns a new "Danger" message toast to the MessageToast handler with user defined HTML layout.
+
+ShowDanger ->
+    let
+        messageToast =
+            model.messageToast
+                |> MessageToast.warning
+                |> MessageToast.withHtml (div [] [ text "My title", text "My warning message body" ])
+    in
+    ( { model | messageToast = messageToast }, Cmd.none)
 ```
 
 ## Example
