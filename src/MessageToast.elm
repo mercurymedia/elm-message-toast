@@ -1,7 +1,7 @@
 module MessageToast exposing
     ( MessageToast(..)
     , init, initWithConfig
-    , danger, info, success, warning
+    , danger, info, success, warning, withHtml, withMessage
     , view
     , subscriptions
     , getOldestToast
@@ -24,7 +24,7 @@ message-type.
 
 # Create
 
-@docs danger, info, success, warning
+@docs danger, info, success, warning, withHtml, withMessage
 
 
 # View
@@ -62,7 +62,20 @@ import Time
 {-| MessageToast holds the collection of messages.
 -}
 type MessageToast msg
-    = MessageToast (ToastConfig msg) (List ToastMessage)
+    = MessageToast (ToastConfig msg) (List (ToastMessage msg))
+
+
+{-| Defines the content type of a toast.
+
+    Undefined -> No display type defined, nothing will be displayed
+    Message m -> User defined message, that will be displayed
+    View v -> User defined view that will take in the toast
+
+-}
+type ToastContent msg
+    = Undefined
+    | Message String
+    | View (Html msg)
 
 
 {-| Different message toast types.
@@ -89,10 +102,10 @@ type alias ToastConfig msg =
 
 {-| ToastMessage holds the message, the specified type and the unique id.
 -}
-type alias ToastMessage =
-    { message : String
-    , toastType : ToastType
+type alias ToastMessage msg =
+    { content : ToastContent msg
     , id : Int
+    , toastType : ToastType
     }
 
 
@@ -145,32 +158,46 @@ initWithConfig updateMsg customConfig =
 -- CREATE
 
 
-{-| Displays a dangerous message.
+{-| Generates a dangerous message toast.
 -}
-danger : MessageToast msg -> String -> MessageToast msg
-danger toast message =
-    appendToList { message = message, toastType = Danger, id = 0 } toast
+danger : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+danger messageToast =
+    Tuple.pair { content = Undefined, toastType = Danger, id = 0 } messageToast
 
 
-{-| Displays an informative message.
+{-| Generates an informative message toast.
 -}
-info : MessageToast msg -> String -> MessageToast msg
-info toast message =
-    appendToList { message = message, toastType = Info, id = 0 } toast
+info : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+info messageToast =
+    Tuple.pair { content = Undefined, toastType = Info, id = 0 } messageToast
 
 
-{-| Displays a success message.
+{-| Generates a success message toast.
 -}
-success : MessageToast msg -> String -> MessageToast msg
-success toast message =
-    appendToList { message = message, toastType = Success, id = 0 } toast
+success : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+success messageToast =
+    Tuple.pair { content = Undefined, toastType = Success, id = 0 } messageToast
 
 
-{-| Displays a warning message.
+{-| Generates a warning message toast.
 -}
-warning : MessageToast msg -> String -> MessageToast msg
-warning toast message =
-    appendToList { message = message, toastType = Warning, id = 0 } toast
+warning : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+warning messageToast =
+    Tuple.pair { content = Undefined, toastType = Warning, id = 0 } messageToast
+
+
+{-| Displays a generated MessageToast content with a given message in the default layout.
+-}
+withMessage : String -> ( ToastMessage msg, MessageToast msg ) -> MessageToast msg
+withMessage message ( content, toast ) =
+    appendToList { content | content = Message message } toast
+
+
+{-| Displays a generated MessageToast content with a given user-defined layout.
+-}
+withHtml : Html msg -> ( ToastMessage msg, MessageToast msg ) -> MessageToast msg
+withHtml userDefinedView ( content, toast ) =
+    appendToList { content | content = View userDefinedView } toast
 
 
 
@@ -216,7 +243,7 @@ view (MessageToast config toasts) =
             div updatedContainerAttributes (viewToasts dismissEvent config toastList)
 
 
-viewToasts : (ToastMessage -> msg) -> ToastConfig msg -> List ToastMessage -> List (Html msg)
+viewToasts : (ToastMessage msg -> msg) -> ToastConfig msg -> List (ToastMessage msg) -> List (Html msg)
 viewToasts dismissEvent config toasts =
     case toasts of
         topToast :: remainingToasts ->
@@ -226,7 +253,7 @@ viewToasts dismissEvent config toasts =
             [ text "" ]
 
 
-viewToast : (ToastMessage -> msg) -> ToastConfig msg -> ToastMessage -> Html msg
+viewToast : (ToastMessage msg -> msg) -> ToastConfig msg -> ToastMessage msg -> Html msg
 viewToast dismissEvent config toast =
     let
         defaultToastAttributes =
@@ -255,7 +282,7 @@ viewToast dismissEvent config toast =
         ]
 
 
-viewToastIcon : List (Html.Attribute msg) -> ToastMessage -> Html msg
+viewToastIcon : List (Html.Attribute msg) -> ToastMessage msg -> Html msg
 viewToastIcon customIconAttributes toast =
     let
         ( bgColor, icon ) =
@@ -295,7 +322,7 @@ viewToastIcon customIconAttributes toast =
     span updatedToastIconStyles [ icon ]
 
 
-viewToastMessage : List (Html.Attribute msg) -> ToastMessage -> Html msg
+viewToastMessage : List (Html.Attribute msg) -> ToastMessage msg -> Html msg
 viewToastMessage customMessageAttributes toast =
     let
         defaultToastMessageAttributes =
@@ -307,7 +334,17 @@ viewToastMessage customMessageAttributes toast =
         updatedToastMessageAttributes =
             List.append defaultToastMessageAttributes customMessageAttributes
     in
-    span updatedToastMessageAttributes [ text toast.message ]
+    span updatedToastMessageAttributes
+        [ case toast.content of
+            Undefined ->
+                text ""
+
+            Message message ->
+                text message
+
+            View userDefinedView ->
+                userDefinedView
+        ]
 
 
 viewCloseIcon : msg -> Html msg
@@ -346,7 +383,7 @@ subscriptions ((MessageToast config _) as messageToast) =
 
 {-| Provides the time-wise oldest message toast that is still shown.
 -}
-getOldestToast : MessageToast msg -> Maybe ToastMessage
+getOldestToast : MessageToast msg -> Maybe (ToastMessage msg)
 getOldestToast (MessageToast _ toasts) =
     List.head toasts
 
@@ -410,7 +447,7 @@ popOldestToast (MessageToast config toasts) =
 -- HELPER
 
 
-appendToList : ToastMessage -> MessageToast msg -> MessageToast msg
+appendToList : ToastMessage msg -> MessageToast msg -> MessageToast msg
 appendToList toastMessage (MessageToast config toasts) =
     let
         lastUsedId =

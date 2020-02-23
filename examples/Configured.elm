@@ -1,7 +1,7 @@
 module Configured exposing (main)
 
 import Browser
-import Html exposing (Html, button, div, table, td, text, th, tr)
+import Html exposing (Html, button, div, span, table, td, text, th, tr)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import MessageToast exposing (MessageToast)
@@ -47,6 +47,7 @@ type Msg
     | ShowSuccess
     | ShowWarning
     | ShowSuperLong
+    | ShowCustomView
     | UpdatedMessageToast (MessageToast Msg)
 
 
@@ -58,16 +59,40 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ShowDanger ->
-            ( { model | messageToast = MessageToast.danger model.messageToast "Something critical happened." }, Cmd.none )
+            let
+                toast =
+                    model.messageToast
+                        |> MessageToast.danger
+                        |> MessageToast.withMessage "Something critical happened."
+            in
+            ( { model | messageToast = toast }, Cmd.none )
 
         ShowInfo ->
-            ( { model | messageToast = MessageToast.info model.messageToast "Process aborted." }, Cmd.none )
+            let
+                toast =
+                    model.messageToast
+                        |> MessageToast.info
+                        |> MessageToast.withMessage "Process aborted."
+            in
+            ( { model | messageToast = toast }, Cmd.none )
 
         ShowSuccess ->
-            ( { model | messageToast = MessageToast.success model.messageToast "Entity created." }, Cmd.none )
+            let
+                toast =
+                    model.messageToast
+                        |> MessageToast.success
+                        |> MessageToast.withMessage "Entity created."
+            in
+            ( { model | messageToast = toast }, Cmd.none )
 
         ShowWarning ->
-            ( { model | messageToast = MessageToast.warning model.messageToast "Could not create entity." }, Cmd.none )
+            let
+                toast =
+                    model.messageToast
+                        |> MessageToast.warning
+                        |> MessageToast.withMessage "Could not create entity."
+            in
+            ( { model | messageToast = toast }, Cmd.none )
 
         ShowSuperLong ->
             let
@@ -78,8 +103,22 @@ update msg model =
                         ++ "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut "
                         ++ "labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores "
                         ++ "et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
+
+                toast =
+                    model.messageToast
+                        |> MessageToast.info
+                        |> MessageToast.withMessage loremIpsum
             in
-            ( { model | messageToast = MessageToast.info model.messageToast loremIpsum }, Cmd.none )
+            ( { model | messageToast = toast }, Cmd.none )
+
+        ShowCustomView ->
+            let
+                toast =
+                    model.messageToast
+                        |> MessageToast.warning
+                        |> MessageToast.withHtml (viewMessageToast "My message title" "My custom messageToast body.")
+            in
+            ( { model | messageToast = toast }, Cmd.none )
 
         UpdatedMessageToast updatedMessageToast ->
             -- Only needed to re-assign the updated MessageToast to the model.
@@ -88,6 +127,14 @@ update msg model =
 
 
 -- VIEW
+
+
+viewMessageToast : String -> String -> Html Msg
+viewMessageToast title body =
+    div [ style "display" "flex", style "flex-direction" "column" ]
+        [ span [ style "font-weight" "900" ] [ text title ]
+        , text body
+        ]
 
 
 view : Model -> Html Msg
@@ -111,6 +158,7 @@ view model =
                 , th (thStyle ++ [ style "background-color" "lime" ]) [ text "SUCCESS" ]
                 , th (thStyle ++ [ style "background-color" "orange" ]) [ text "WARNING" ]
                 , th (thStyle ++ [ style "background-color" "gray" ]) [ text "SUPERLONG" ]
+                , th (thStyle ++ [ style "background-color" "orange" ]) [ text "CUSTOM VIEW" ]
                 ]
             , tr []
                 [ th thStyle [ text "Show Message" ]
@@ -119,6 +167,7 @@ view model =
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowSuccess ] [ text "Show" ] ]
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowWarning ] [ text "Show" ] ]
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowSuperLong ] [ text "Show" ] ]
+                , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowCustomView ] [ text "Show" ] ]
                 ]
             ]
         ]
