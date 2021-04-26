@@ -356,6 +356,9 @@ viewToastMessage customMessageAttributes toast =
             [ class "toast-message"
             , style "padding" "0.75rem"
             , style "flex-grow" "1"
+            , style "word-break" "break-word"
+            , style "max-height" "250px"
+            , style "overflow" "scroll"
             ]
 
         updatedToastMessageAttributes =
