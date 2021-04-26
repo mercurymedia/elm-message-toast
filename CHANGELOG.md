@@ -1,8 +1,16 @@
 # Changelog
 
-Users have now the possibility to provide a custom HTML layout for the MessageToast content.
+## [3.0.0]
+
+- Added `persistToast`. Persists a single toast message to be unaffected by the regular timeout. Persited toast can only be closed by a user click event.
+- Added additional default stylings for toast message body. Default stylings can be overwritten as usual using `overwriteMessageAttributes`.
+  - `word-break: break-word;` Break long text in the message body
+  - `max-height: 250px; overflow: scroll;` Scrollable message body at a certain height
+- Removed `getOldestToast` and `popOldestToast` from the package
 
 ## [2.0.0]
+
+Users have now the possibility to provide a custom HTML layout for the MessageToast content.
 
 ### **BREAKING CHANGE**
 
