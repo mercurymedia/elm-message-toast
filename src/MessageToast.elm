@@ -1,11 +1,12 @@
 module MessageToast exposing
     ( MessageToast(..)
     , init, initWithConfig
-    , danger, info, success, warning, withHtml, withMessage
+    , danger, info, success, warning
+    , persistToast
+    , withHtml, withMessage
     , view
     , subscriptions
-    , getOldestToast
-    , overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, overwriteToastAttributes, popOldestToast
+    , overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, overwriteToastAttributes
     )
 
 {-| MessageToast displays a list of feedback messages, each with a specified
@@ -22,9 +23,19 @@ message-type.
 @docs init, initWithConfig
 
 
-# Create
+# Initial
 
-@docs danger, info, success, warning, withHtml, withMessage
+@docs danger, info, success, warning
+
+
+# Intermediate
+
+@docs persistToast
+
+
+# Final
+
+@docs withHtml, withMessage
 
 
 # View
@@ -37,14 +48,9 @@ message-type.
 @docs subscriptions
 
 
-# Query
-
-@docs getOldestToast
-
-
 # Manipulate
 
-@docs overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, overwriteToastAttributes, popOldestToast
+@docs overwriteContainerAttributes, overwriteIconAttributes, overwriteMessageAttributes, overwriteToastAttributes
 
 -}
 
@@ -105,6 +111,7 @@ type alias ToastConfig msg =
 type alias ToastMessage msg =
     { content : ToastContent msg
     , id : Int
+    , persisted : Bool
     , toastType : ToastType
     }
 
@@ -155,35 +162,51 @@ initWithConfig updateMsg customConfig =
 
 
 
--- CREATE
+-- INITIAL TOAST METHODS
 
 
 {-| Generates a dangerous message toast.
 -}
 danger : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
 danger messageToast =
-    Tuple.pair { content = Undefined, toastType = Danger, id = 0 } messageToast
+    Tuple.pair { defaultToastMessage | toastType = Danger } messageToast
 
 
 {-| Generates an informative message toast.
 -}
 info : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
 info messageToast =
-    Tuple.pair { content = Undefined, toastType = Info, id = 0 } messageToast
+    Tuple.pair { defaultToastMessage | toastType = Info } messageToast
 
 
 {-| Generates a success message toast.
 -}
 success : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
 success messageToast =
-    Tuple.pair { content = Undefined, toastType = Success, id = 0 } messageToast
+    Tuple.pair { defaultToastMessage | toastType = Success } messageToast
 
 
 {-| Generates a warning message toast.
 -}
 warning : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
 warning messageToast =
-    Tuple.pair { content = Undefined, toastType = Warning, id = 0 } messageToast
+    Tuple.pair { defaultToastMessage | toastType = Warning } messageToast
+
+
+
+-- INTERMEDIATE TOAST METHODS
+
+
+{-| Keeps the toast persisted in the MessageToast container by making it unaffected to
+the defined toast-timeout. The toast can still be removed by user clicks.
+-}
+persistToast : ( ToastMessage msg, MessageToast msg ) -> ( ToastMessage msg, MessageToast msg )
+persistToast ( toastMessage, messageToast ) =
+    ( { toastMessage | persisted = True }, messageToast )
+
+
+
+-- FINAL TOAST METHODS
 
 
 {-| Displays a generated MessageToast content with a given message in the default layout.
@@ -210,9 +233,9 @@ view : MessageToast msg -> Html msg
 view (MessageToast config toasts) =
     let
         dismissEvent =
-            \toastMessage ->
+            \toastToDrop ->
                 toasts
-                    |> List.filter (\toast -> toast.id /= toastMessage.id)
+                    |> dropToastById toastToDrop.id
                     |> MessageToast config
                     |> config.updateMsg
     in
@@ -368,24 +391,13 @@ viewCloseIcon dismissEvent =
 {-| Subscription to automatically remove the oldest toast that is still displayed.
 -}
 subscriptions : MessageToast msg -> Sub msg
-subscriptions ((MessageToast config _) as messageToast) =
-    case getOldestToast messageToast of
-        Just toastMessage ->
-            Time.every config.delayInMs (\_ -> config.updateMsg <| popOldestToast messageToast)
+subscriptions (MessageToast config toasts) =
+    case findToastToDrop toasts of
+        Just toastToDrop ->
+            Time.every config.delayInMs (\_ -> config.updateMsg <| MessageToast config <| dropToastById toastToDrop.id toasts)
 
         Nothing ->
             Sub.none
-
-
-
--- QUERY
-
-
-{-| Provides the time-wise oldest message toast that is still shown.
--}
-getOldestToast : MessageToast msg -> Maybe (ToastMessage msg)
-getOldestToast (MessageToast _ toasts) =
-    List.head toasts
 
 
 
@@ -424,23 +436,12 @@ overwriteMessageAttributes attributes (MessageToast config toasts) =
 
 {-| Override existing styles for the message toast that wraps the icon and message block.
 
-For example, can be used to ovveride border stylings, shadows or spacings between the toasts.
+For example, can be used to override border stylings, shadows or spacings between the toasts.
 
 -}
 overwriteToastAttributes : List (Html.Attribute msg) -> MessageToast msg -> MessageToast msg
 overwriteToastAttributes attributes (MessageToast config toasts) =
     MessageToast { config | customToastAttributes = attributes } toasts
-
-
-{-| Removes the time-wise oldest toast from the existing collection.
--}
-popOldestToast : MessageToast msg -> MessageToast msg
-popOldestToast (MessageToast config toasts) =
-    let
-        newToasts =
-            List.take (List.length toasts - 1) toasts
-    in
-    MessageToast config newToasts
 
 
 
@@ -460,6 +461,50 @@ appendToList toastMessage (MessageToast config toasts) =
         |> List.append [ { toastMessage | id = lastUsedId + 1 } ]
         |> List.take config.toastsToShow
         |> MessageToast config
+
+
+{-| Default configuration for ToastMessages.
+-}
+defaultToastMessage : ToastMessage msg
+defaultToastMessage =
+    { content = Undefined
+    , id = 0
+    , persisted = False
+    , toastType = Danger
+    }
+
+
+{-| Drops Toast by Id from the list and returns the updated list.
+-}
+dropToastById : Int -> List (ToastMessage msg) -> List (ToastMessage msg)
+dropToastById toastIdToRemove toasts =
+    List.filter (.id >> (/=) toastIdToRemove) toasts
+
+
+{-| Find toasts to be dropped next from the given list and return Just that element. If none match, return Nothing.
+-}
+findToastToDrop : List (ToastMessage msg) -> Maybe (ToastMessage msg)
+findToastToDrop toasts =
+    -- Searching for the oldest, not persisted toast
+    toasts
+        |> List.reverse
+        |> getFirstMatch (.persisted >> not)
+
+
+{-| Get the first element that satisfies a predicate and return Just that element. If none match, return Nothing.
+-}
+getFirstMatch : (a -> Bool) -> List a -> Maybe a
+getFirstMatch predicate list =
+    case list of
+        [] ->
+            Nothing
+
+        head :: tail ->
+            if predicate head then
+                Just head
+
+            else
+                getFirstMatch predicate tail
 
 
 {-| Provides a specific HTML-class name to better distinguish the different toast types in the DOM.
