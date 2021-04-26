@@ -48,6 +48,7 @@ type Msg
     | ShowInfo
     | ShowSuccess
     | ShowWarning
+    | ShowPersisted
     | ShowSuperLong
     | ShowCustomView
     | UpdatedMessageToast (MessageToast Msg)
@@ -93,6 +94,16 @@ update msg model =
                     model.messageToast
                         |> MessageToast.warning
                         |> MessageToast.withMessage "Could not create entity."
+            in
+            ( { model | messageToast = toast }, Cmd.none )
+
+        ShowPersisted ->
+            let
+                toast =
+                    model.messageToast
+                        |> MessageToast.warning
+                        |> MessageToast.persistToast
+                        |> MessageToast.withMessage "Error message won't disappear automatically."
             in
             ( { model | messageToast = toast }, Cmd.none )
 
@@ -155,6 +166,7 @@ view model =
                 , th (thStyle ++ [ style "background-color" "gray" ]) [ text "INFO" ]
                 , th (thStyle ++ [ style "background-color" "lime" ]) [ text "SUCCESS" ]
                 , th (thStyle ++ [ style "background-color" "orange" ]) [ text "WARNING" ]
+                , th (thStyle ++ [ style "background-color" "red" ]) [ text "PERSISTED WARNING" ]
                 , th (thStyle ++ [ style "background-color" "gray" ]) [ text "SUPERLONG" ]
                 , th (thStyle ++ [ style "background-color" "orange" ]) [ text "CUSTOM VIEW" ]
                 ]
@@ -164,6 +176,7 @@ view model =
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowInfo ] [ text "Show" ] ]
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowSuccess ] [ text "Show" ] ]
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowWarning ] [ text "Show" ] ]
+                , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowPersisted ] [ text "Show" ] ]
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowSuperLong ] [ text "Show" ] ]
                 , td [ style "background-color" "#ddd", style "text-align" "center" ] [ button [ onClick <| ShowCustomView ] [ text "Show" ] ]
                 ]
