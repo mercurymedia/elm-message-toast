@@ -71,6 +71,10 @@ type MessageToast msg
     = MessageToast (ToastConfig msg) (List (ToastMessage msg))
 
 
+type IntermediateMessageToast msg
+    = Intermediate ( ToastMessage msg, MessageToast msg )
+
+
 {-| Defines the content type of a toast.
 
     Undefined -> No display type defined, nothing will be displayed
@@ -167,30 +171,30 @@ initWithConfig updateMsg customConfig =
 
 {-| Generates a dangerous message toast.
 -}
-danger : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+danger : MessageToast msg -> IntermediateMessageToast msg
 danger messageToast =
-    Tuple.pair { defaultToastMessage | toastType = Danger } messageToast
+    Intermediate <| Tuple.pair { defaultToastMessage | toastType = Danger } messageToast
 
 
 {-| Generates an informative message toast.
 -}
-info : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+info : MessageToast msg -> IntermediateMessageToast msg
 info messageToast =
-    Tuple.pair { defaultToastMessage | toastType = Info } messageToast
+    Intermediate <| Tuple.pair { defaultToastMessage | toastType = Info } messageToast
 
 
 {-| Generates a success message toast.
 -}
-success : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+success : MessageToast msg -> IntermediateMessageToast msg
 success messageToast =
-    Tuple.pair { defaultToastMessage | toastType = Success } messageToast
+    Intermediate <| Tuple.pair { defaultToastMessage | toastType = Success } messageToast
 
 
 {-| Generates a warning message toast.
 -}
-warning : MessageToast msg -> ( ToastMessage msg, MessageToast msg )
+warning : MessageToast msg -> IntermediateMessageToast msg
 warning messageToast =
-    Tuple.pair { defaultToastMessage | toastType = Warning } messageToast
+    Intermediate <| Tuple.pair { defaultToastMessage | toastType = Warning } messageToast
 
 
 
@@ -200,9 +204,9 @@ warning messageToast =
 {-| Keeps the toast persisted in the MessageToast container by making it unaffected to
 the defined toast-timeout. The toast can still be removed by user clicks.
 -}
-persistToast : ( ToastMessage msg, MessageToast msg ) -> ( ToastMessage msg, MessageToast msg )
-persistToast ( toastMessage, messageToast ) =
-    ( { toastMessage | persisted = True }, messageToast )
+persistToast : IntermediateMessageToast msg -> IntermediateMessageToast msg
+persistToast (Intermediate ( toastMessage, messageToast )) =
+    Intermediate <| ( { toastMessage | persisted = True }, messageToast )
 
 
 
@@ -211,15 +215,15 @@ persistToast ( toastMessage, messageToast ) =
 
 {-| Displays a generated MessageToast content with a given message in the default layout.
 -}
-withMessage : String -> ( ToastMessage msg, MessageToast msg ) -> MessageToast msg
-withMessage message ( content, toast ) =
+withMessage : String -> IntermediateMessageToast msg -> MessageToast msg
+withMessage message (Intermediate ( content, toast )) =
     appendToList { content | content = Message message } toast
 
 
 {-| Displays a generated MessageToast content with a given user-defined layout.
 -}
-withHtml : Html msg -> ( ToastMessage msg, MessageToast msg ) -> MessageToast msg
-withHtml userDefinedView ( content, toast ) =
+withHtml : Html msg -> IntermediateMessageToast msg -> MessageToast msg
+withHtml userDefinedView (Intermediate ( content, toast )) =
     appendToList { content | content = View userDefinedView } toast
 
 
